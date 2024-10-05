@@ -6,13 +6,25 @@
 //
 
 import SwiftUI
+import SwiftData
 
-struct Note: View {
-    var body: some View {
-        Text(/*@START_MENU_TOKEN@*/"Hello, World!"/*@END_MENU_TOKEN@*/)
+@Model
+class Note {
+    init(colorString: String, title: String, content: String) {
+        self.colorString = colorString
+        self.title = title
+        self.content = content
+    }
+    var id: String = UUID().uuidString
+    var dateCreated: Date = Date()
+    var colorString: String
+    var title: String
+    var content: String
+    /// View Properties
+    var allowsHitTesting: Bool = false
+    
+    var color: Color {
+        Color(colorString)
     }
 }
 
-#Preview {
-    Note()
-}
