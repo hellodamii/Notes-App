@@ -14,6 +14,7 @@ struct Home: View {
     @State private var deleteNote: Note?
     @State private var animateView: Bool = false
     @FocusState private var isKeyboardActive: Bool
+    @State private var titleNoteSize: CGSize = .zero
     @Namespace private var animation
     @Query(sort: [.init(\Note.dateCreated, order: .reverse)], animation: .snappy)
     private var notes: [Note]
@@ -46,7 +47,7 @@ struct Home: View {
                 let size = $0.size
                 ForEach(notes) {note in
                     if note.id == selectedNote?.id && animateView {
-                        DetailView(size: size, animation: animation, note: note)
+                        DetailView(size: size,titleNoteSize: titleNoteSize, animation: animation, note: note)
                             .ignoresSafeArea(.container, edges: .top)
                     }
                 }
@@ -80,9 +81,18 @@ struct Home: View {
             } else {
                 RoundedRectangle(cornerRadius: 10)
                     .fill(note.color.gradient)
+                    .overlay {
+                        TitleNoteView(size: titleNoteSize, note: note)
+                    }
                     .matchedGeometryEffect(id: note.id, in: animation)
             }
         }
+        .onGeometryChange(for: CGSize.self) {
+            $0.size
+        } action: { newValue in
+            titleNoteSize = newValue
+        }
+       
     }
     
     @ViewBuilder
@@ -162,14 +172,16 @@ struct Home: View {
                 .opacity(selectedNote != nil ? 0 : 1)
         }
         .overlay {
-            if selectedNote != nil {
+            if selectedNote != nil && !isKeyboardActive {
                 CardColorPicker()
                     .transition(.blurReplace)
             }
         }
-        .padding(15)
+        .padding(.horizontal,15)
+        .padding(.vertical, isKeyboardActive ? 8 : 15)
         .background(.bar)
         .animation(noteAnimation, value: selectedNote != nil)
+        .animation(noteAnimation, value: isKeyboardActive)
     }
     @ViewBuilder
     func CardColorPicker() -> some View {
@@ -214,8 +226,24 @@ struct Home: View {
         }
     }
 }
+
+struct TitleNoteView: View {
+    var size: CGSize
+    var note: Note
+    var body: some View {
+        Text(note.title)
+            .font(.title3)
+            .fontWeight(.medium)
+            .foregroundStyle(.black)
+            .padding(15)
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+            .frame(width: size.width, height: size.height)
+    }
+}
+
 struct DetailView: View {
     var size: CGSize
+    var titleNoteSize: CGSize
     var animation: Namespace.ID
    @Bindable var note: Note
     /// View properties
@@ -223,6 +251,9 @@ struct DetailView: View {
     var body: some View {
         Rectangle()
             .fill(note.color.gradient)
+            .overlay {
+                TitleNoteView(size: titleNoteSize, note: note)
+            }
             .overlay {
                 NotesContent()
             }
